@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="/js/Chart.bundle.js"></script>
+    <script src="/js/utils.js"></script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <title>Teste-VML</title>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand h1 mb-0" href="#">Curso</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSite">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSite">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Perfil</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Serviços</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Depoimentos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contatos</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="navDrop">Social</a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Facebook</a>
+                        <a class="dropdown-item" href="#">Twitter</a>
+                        <a class="dropdown-item" href="#">Instagram</a>
+                    </div>
+                </li>
+            </ul>
+            <form class="form-inline">
+                <input class="form-control ml-4 mr-2" type="search" placeholder="Buscar...">
+                <button class="btn btn-dark" type="submit">OK</button>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12 mx-auto">
+            <div class="card border-0">
+                <div class="dados">
+                    <span class="fancyArrow"></span>
+                    <select id="repoList"></select>
+                </div>
+                <div class="row dados">
+                    <div id="stars">
+                        Total de stars: <span id="total-stars"></span>
+                    </div>
+                    <div id="forks">
+                        Total de forks: <span id="total-forks"></span>
+                    </div>
+                    <div id="contribs">
+                        Total de contribs: <span id="total-contribs"></span>
+                    </div>
+                </div>    
+                <canvas id="chart" width="800" height="450"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="page-footer font-small bg-light mt-4">
+    <div class="footer-copyright text-center py-3">
+      © 2018 Globo.com
+    </div>
+</footer>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="/js/jquery.min.js"></script>
+<script src="/js/popper.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/moment.min.js"></script>
+<script>
+var urlRepo = "https://api.github.com/users/globocom/repos";
+var repos;
+
+function showData(item){
+    $("#total-stars").text(item.stargazers_count);
+    $("#total-forks").text(item.forks_count);        
+    $.getJSON(item.contributors_url,function(data){
+        $("#total-contribs").text(data.length);
+    })
+    $.getJSON(item.commits_url.replace('{/sha}', ''),function(data){
+        var commitsByMonth = [];
+        for(var i = 0; i < data.length; i++) {
+            var commit = data[i];
+            var commitMonth = moment();
+            var commitLabel = moment(commit.commit.author.date).format('MM-YYYY');
+            
+            if(!commitsByMonth[commitLabel]){
+                commitsByMonth[commitLabel] = []; 
+            }
+            commitsByMonth[commitLabel].push(commit);
+        }
+        
+        var dataChart = [];
+        var labelsChart = [];
+              
+        for(commitLabel in commitsByMonth) {
+            var commits = commitsByMonth[commitLabel];
+            labelsChart.push(commitLabel);
+            dataChart.push(commits.length);
+        }
+        
+        var lineChartData = {
+            labels: labelsChart,
+            datasets: [{
+                label: 'Commits',
+                borderColor: window.chartColors.blue,
+                pointBackgroundColor: window.chartColors.blue,
+                fill: false,
+                data: dataChart
+            }]
+        };
+        
+        //console.log(dataChart)
+
+        new Chart($("#chart").get(0), {
+            type: 'line',
+            data: lineChartData
+        });
+    })
+} 
+
+$.getJSON(urlRepo,function(data){
+    //console.log(data);
+    repos = data;
+    totalStars = 0;
+    totalForks = 0;
+    totalContribs = 0;
+    for(var i = 0; i < data.length; i++) {
+        var item = data[i]
+        //console.log(item)
+        $option = $("<option></option>");
+        $option.attr('value',i);
+        $option.text(item.name);
+        $('#repoList').append($option);    
+    }
+    
+    showData(repos[0]);
+    
+    $("#repoList").change(function(){
+        var item = repos[$(this).val()];
+        showData(item);
+    })
+});
+</script>
+</body>
+</html>
